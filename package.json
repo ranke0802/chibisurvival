@@ -1,0 +1,30 @@
+{
+  "name": "bem-survivor",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "assets:chibi": "python3 scripts/prepare_chibi_sheet.py",
+    "assets:motion": "python3 scripts/generate_chibi_motion_sheet.py",
+    "assets:theme": "python3 scripts/generate_assets.py",
+    "assets:audio": "python3 scripts/generate_audio_assets.py",
+    "assets:ai": "python3 scripts/generate_ai_assets_openai.py",
+    "assets:all": "npm run assets:theme && npm run assets:chibi && npm run assets:motion && npm run assets:audio"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^5.0.4",
+    "playwright": "^1.58.2",
+    "typescript": "^5.8.2",
+    "vite": "^7.1.7"
+  }
+}

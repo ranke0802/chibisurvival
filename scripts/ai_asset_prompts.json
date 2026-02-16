@@ -1,0 +1,110 @@
+[
+  {
+    "path": "public/assets/characters/warrior.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art chibi fantasy warrior, full body front-facing idle pose, same silhouette and proportions as a cute witch chibi sprite sheet style, oversized head and tiny body, red armor robe with small sword and pouch, clean outline, game-ready transparent background, high readability at 64x64 scale."
+  },
+  {
+    "path": "public/assets/characters/archer.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art chibi fantasy archer, full body front-facing idle pose, consistent style with cute witch chibi, oversized head and tiny body, green ranger outfit with bow and pouch, clean outline, game-ready transparent background, high readability at 64x64 scale."
+  },
+  {
+    "path": "public/assets/monsters/slime.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art cute-but-menacing slime monster for top-down survivor game, centered full body, transparent background, soft green palette, clear silhouette, clean outline, readable at small size."
+  },
+  {
+    "path": "public/assets/monsters/bat.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art chibi bat monster, wings spread, centered, transparent background, dark indigo palette, cute but dangerous, clean silhouette and outline for small-size readability."
+  },
+  {
+    "path": "public/assets/monsters/skeleton.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art chibi skeleton monster for survivor game, centered full body, transparent background, off-white bones with dark eye slots, clean outline, readable at 64x64."
+  },
+  {
+    "path": "public/assets/monsters/scorpion.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art stylized scorpion monster, centered, transparent background, warm desert palette, clear pincers and tail, clean outline and compact silhouette for game sprite."
+  },
+  {
+    "path": "public/assets/monsters/mummy.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art chibi mummy monster, centered, transparent background, wrapped body and dark eyes, cute yet eerie style, clean outline, readable at small resolution."
+  },
+  {
+    "path": "public/assets/monsters/flame.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art fire elemental monster, centered, transparent background, outer orange flame and bright inner core, clear face, clean outline and high contrast at small size."
+  },
+  {
+    "path": "public/assets/bosses/king_slime.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art boss monster giant slime king, centered full body, transparent background, crown-like crest, chunky silhouette, readable and impressive for boss sprite."
+  },
+  {
+    "path": "public/assets/bosses/gargoyle_lord.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art boss gargoyle lord, centered transparent background, stone wings and horns, dark blue-gray palette, sharp silhouette, high readability."
+  },
+  {
+    "path": "public/assets/bosses/desert_predator.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art boss desert predator scorpion-like beast, centered transparent background, heavy armor plates, desert gold palette, dramatic outline."
+  },
+  {
+    "path": "public/assets/bosses/magma_golem.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art boss magma golem, centered transparent background, volcanic rock body with lava cracks, red-orange glow, strong silhouette."
+  },
+  {
+    "path": "public/assets/bosses/demon_lord.png",
+    "size": "1024x1024",
+    "transparent_background": true,
+    "prompt": "Pixel art demon lord final boss, centered transparent background, dark crimson palette, horns and regal armor, intense expression, readable at small scale."
+  },
+  {
+    "path": "public/assets/backgrounds/stage_1.png",
+    "size": "1024x1024",
+    "transparent_background": false,
+    "prompt": "Top-down seamless pixel art forest battlefield texture for survivor game, dark green mood, subtle paths and foliage patterns, no characters, tileable."
+  },
+  {
+    "path": "public/assets/backgrounds/stage_2.png",
+    "size": "1024x1024",
+    "transparent_background": false,
+    "prompt": "Top-down seamless pixel art cave battlefield texture, deep blue-gray stones and crystal accents, tileable, no characters."
+  },
+  {
+    "path": "public/assets/backgrounds/stage_3.png",
+    "size": "1024x1024",
+    "transparent_background": false,
+    "prompt": "Top-down seamless pixel art desert battlefield texture, dunes and wind marks, warm sandy palette, tileable, no characters."
+  },
+  {
+    "path": "public/assets/backgrounds/stage_4.png",
+    "size": "1024x1024",
+    "transparent_background": false,
+    "prompt": "Top-down seamless pixel art lava battlefield texture, cracked volcanic rock with glowing lines, tileable, no characters."
+  },
+  {
+    "path": "public/assets/backgrounds/stage_5.png",
+    "size": "1024x1024",
+    "transparent_background": false,
+    "prompt": "Top-down seamless pixel art dark castle floor texture, ornate tiles and subtle glowing runes, tileable, no characters."
+  }
+]

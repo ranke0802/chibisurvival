@@ -1,0 +1,95 @@
+{
+  "ui_click": {
+    "file": "/audio/sfx/ui_click.wav",
+    "volume": 0.36,
+    "cooldownMs": 24,
+    "duck": 0.04
+  },
+  "player_attack": {
+    "file": "/audio/sfx/player_attack.wav",
+    "volume": 0.17,
+    "cooldownMs": 80,
+    "pitchJitter": 0.03,
+    "duck": 0.05
+  },
+  "skill_lightning": {
+    "file": "/audio/sfx/skill_lightning.wav",
+    "volume": 0.23,
+    "cooldownMs": 210,
+    "pitchJitter": 0.02,
+    "duck": 0.14
+  },
+  "skill_blade": {
+    "file": "/audio/sfx/skill_blade.wav",
+    "volume": 0.12,
+    "cooldownMs": 95,
+    "pitchJitter": 0.04,
+    "duck": 0.06
+  },
+  "skill_laser": {
+    "file": "/audio/sfx/skill_laser.wav",
+    "volume": 0.25,
+    "cooldownMs": 260,
+    "pitchJitter": 0.015,
+    "duck": 0.15
+  },
+  "player_hit": {
+    "file": "/audio/sfx/player_hit.wav",
+    "volume": 0.2,
+    "cooldownMs": 110,
+    "duck": 0.08
+  },
+  "monster_die": {
+    "file": "/audio/sfx/monster_die.wav",
+    "volume": 0.14,
+    "cooldownMs": 35,
+    "pitchJitter": 0.05,
+    "duck": 0.03
+  },
+  "boss_spawn": {
+    "file": "/audio/sfx/boss_spawn.wav",
+    "volume": 0.32,
+    "cooldownMs": 900,
+    "duck": 0.2
+  },
+  "boss_die": {
+    "file": "/audio/sfx/boss_die.wav",
+    "volume": 0.31,
+    "cooldownMs": 900,
+    "duck": 0.18
+  },
+  "level_up": {
+    "file": "/audio/sfx/level_up.wav",
+    "volume": 0.26,
+    "cooldownMs": 240,
+    "duck": 0.1
+  },
+  "stage_clear": {
+    "file": "/audio/sfx/stage_clear.wav",
+    "volume": 0.28,
+    "cooldownMs": 900,
+    "duck": 0.16
+  },
+  "game_over": {
+    "file": "/audio/sfx/game_over.wav",
+    "volume": 0.31,
+    "cooldownMs": 900,
+    "duck": 0.18
+  },
+  "victory": {
+    "file": "/audio/sfx/victory.wav",
+    "volume": 0.33,
+    "cooldownMs": 900,
+    "duck": 0.18
+  },
+  "player_move_loop": {
+    "file": "/audio/sfx/player_move_loop.wav",
+    "volume": 0.09,
+    "loop": true
+  },
+  "monster_swarm_loop": {
+    "file": "/audio/sfx/monster_swarm_loop.wav",
+    "volume": 0.08,
+    "loop": true
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "reference": "public/assets/characters/chibi.jpg",
+  "global_style": {
+    "look": "cute 8-bit chibi, oversized head, round body, clean black outline, readable at small size, centered sprite",
+    "camera": "top-down, orthographic",
+    "lighting": "flat, clear contrast, no realistic shading",
+    "palette": "warm saturated fantasy palette",
+    "quality": "high readability for game assets",
+    "anti_aliasing": "off / crisp pixel edges",
+    "requirements": "no text, no watermark, no UI, no frame, transparent background unless specified"
+  },
+  "cleanup_target": {
+    "safe_to_delete_now": [
+      "public/assets/bosses/boss.png"
+    ],
+    "delete_if_fully_replaced": [
+      "public/assets/characters/chibi_sheet.png",
+      "public/assets/characters/chibi_motion_sheet.png",
+      "public/assets/characters/chibi_portrait.png"
+    ],
+    "keep": [
+      "public/assets/characters/chibi.jpg"
+    ]
+  },
+  "prompts": [
+    {
+      "path": "public/assets/characters/warrior.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi fantasy warrior, full-body top-down sprite, same visual language as reference wizard (big head, tiny body, cute proportions), armored red and black adventurer outfit, short brown hair, sword in right hand, shield on left arm, strong silhouette, clean outline, transparent background."
+    },
+    {
+      "path": "public/assets/characters/archer.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi fantasy archer, full-body top-down sprite, same style and proportions as reference wizard, green-brown hunter outfit, leather quiver, bow and short sword, big expressive eyes, cute but combat-ready, clean outline, transparent background."
+    },
+    {
+      "path": "public/assets/characters/mage.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi wizard/mage redesign, full-body top-down sprite matching the provided reference style, purple robe, tiny hat, staff and magic orb, cute but powerful look, oversized head, clear silhouette, clean outline, transparent background."
+    },
+    {
+      "path": "public/assets/characters/chibi_portrait.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Cute pixel art chibi portrait of a young wizard in the exact reference style, centered bust + upper body, oversized head and eyes, soft blush, minimal background, transparent background, game UI portrait style."
+    },
+    {
+      "path": "public/assets/monsters/slime.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art cute slime monster, top-down, jelly-like body, readable at small size, glossy green core, simple facial features, clean outline, no background."
+    },
+    {
+      "path": "public/assets/monsters/bat.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi bat monster, top-down full body, wings spread and aggressive silhouette, dark indigo palette, crisp line art, readable at mobile size, transparent background."
+    },
+    {
+      "path": "public/assets/monsters/skeleton.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi skeleton monster, top-down, skull head with glowing eyes, wrapped bones and simple weapon, cute yet frightening, clean outline, readable at 32x32 scale, transparent background."
+    },
+    {
+      "path": "public/assets/monsters/scorpion.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi scorpion monster, top-down full body, clearly visible pincers and tail, desert palette, cartoon menace, clean outline, transparent background."
+    },
+    {
+      "path": "public/assets/monsters/mummy.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art chibi mummy monster, top-down, wrapped mummy cloth body and dark glowing eyes, ominous but cute vibe, clear silhouette, clean lineart, transparent background."
+    },
+    {
+      "path": "public/assets/monsters/flame.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art fire elemental monster, top-down, compact flame body with white-hot core and orange petals, floating movement pose, cute yet threatening, clean outline, transparent background."
+    },
+    {
+      "path": "public/assets/bosses/king_slime.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art boss slime king, top-down, giant slime with crown crest and royal shoulder spikes, chunky readable silhouette, green-gold palette, high contrast, transparent background."
+    },
+    {
+      "path": "public/assets/bosses/gargoyle_lord.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art gargoyle lord boss, top-down, stone wings, heavy armor, dark blue-gray palette, intimidating eyes and horns, clean readability at 64+ px scale, transparent background."
+    },
+    {
+      "path": "public/assets/bosses/desert_predator.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art desert predator boss, top-down monster resembling giant armored scorpion-sabre beast, sandy bronze palette, giant pincers and segmented tail, epic silhouette, transparent background."
+    },
+    {
+      "path": "public/assets/bosses/magma_golem.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art magma golem boss, top-down, volcanic rock body with glowing cracks and lava core, red-orange accents, heavy silhouette, clean outline, transparent background."
+    },
+    {
+      "path": "public/assets/bosses/demon_lord.png",
+      "size": "1024x1024",
+      "transparent_background": true,
+      "prompt": "Pixel art demon lord final boss, top-down, crimson and black armor, menacing horns and cape, intense expression, dramatic silhouette, high contrast cute-chibi proportions, transparent background."
+    },
+    {
+      "path": "public/assets/backgrounds/stage_1.png",
+      "size": "1024x1024",
+      "transparent_background": false,
+      "prompt": "Seamless top-down pixel-art forest battleground tile texture, dark leafy ground patterns and mossy stones, soft lighting, no characters, game-level background."
+    },
+    {
+      "path": "public/assets/backgrounds/stage_2.png",
+      "size": "1024x1024",
+      "transparent_background": false,
+      "prompt": "Seamless top-down pixel-art cave battleground tile texture, blue-gray stone floor, wall fractures, crystal accents, moody atmosphere, no characters, game-level background."
+    },
+    {
+      "path": "public/assets/backgrounds/stage_3.png",
+      "size": "1024x1024",
+      "transparent_background": false,
+      "prompt": "Seamless top-down pixel-art desert battleground tile texture, dunes, wind marks, cracked soil and dry shrubs, warm orange-brown palette, no characters, game-level background."
+    },
+    {
+      "path": "public/assets/backgrounds/stage_4.png",
+      "size": "1024x1024",
+      "transparent_background": false,
+      "prompt": "Seamless top-down pixel-art lava cavern battleground tile texture, volcanic cracks and glowing runes, red-black stones, subtle heat haze effect, no characters, game-level background."
+    },
+    {
+      "path": "public/assets/backgrounds/stage_5.png",
+      "size": "1024x1024",
+      "transparent_background": false,
+      "prompt": "Seamless top-down pixel-art dark castle floor texture, black stone tiles, glowing runes, cracked arches and banners, fantasy boss arena mood, no characters, game-level background."
+    }
+  ]
+}

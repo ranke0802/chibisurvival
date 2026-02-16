@@ -1,0 +1,50 @@
+{
+  "menu": {
+    "file": "/audio/bgm/menu_theme.wav",
+    "volume": 0.42,
+    "fadeInSec": 0.9,
+    "fadeOutSec": 0.7
+  },
+  "stage_1": {
+    "file": "/audio/bgm/stage_theme_1.wav",
+    "volume": 0.5,
+    "fadeInSec": 1.1,
+    "fadeOutSec": 0.8
+  },
+  "stage_2": {
+    "file": "/audio/bgm/stage_theme_2.wav",
+    "volume": 0.5,
+    "fadeInSec": 1.1,
+    "fadeOutSec": 0.8
+  },
+  "stage_3": {
+    "file": "/audio/bgm/stage_theme_3.wav",
+    "volume": 0.52,
+    "fadeInSec": 1.1,
+    "fadeOutSec": 0.8
+  },
+  "stage_4": {
+    "file": "/audio/bgm/stage_theme_4.wav",
+    "volume": 0.53,
+    "fadeInSec": 1.1,
+    "fadeOutSec": 0.8
+  },
+  "stage_5": {
+    "file": "/audio/bgm/stage_theme_5.wav",
+    "volume": 0.55,
+    "fadeInSec": 1.1,
+    "fadeOutSec": 0.8
+  },
+  "boss": {
+    "file": "/audio/bgm/boss_theme.wav",
+    "volume": 0.5,
+    "fadeInSec": 0.7,
+    "fadeOutSec": 0.6
+  },
+  "results": {
+    "file": "/audio/bgm/results_theme.wav",
+    "volume": 0.42,
+    "fadeInSec": 0.7,
+    "fadeOutSec": 0.7
+  }
+}
