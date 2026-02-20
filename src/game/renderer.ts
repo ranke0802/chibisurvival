@@ -50,12 +50,12 @@ const loadSprite = (src: string): HTMLImageElement => {
   return image;
 };
 
-interface MotionSheetConfig {
-  image: HTMLImageElement;
+interface IndividualSpriteConfig {
+  idle: HTMLImageElement;
+  walk: HTMLImageElement;
+  attack: HTMLImageElement;
+  cols: number;
   rows: number;
-  idleRow: number;
-  walkRow: number;
-  attackRow: number | null;
 }
 
 const characterFallbackSprites: Record<CharacterId, HTMLImageElement> = {
@@ -65,27 +65,24 @@ const characterFallbackSprites: Record<CharacterId, HTMLImageElement> = {
 };
 
 const chibiSheetSprite = loadSprite('/assets/characters/chibi_sheet.png');
-const characterMotionSheets: Record<CharacterId, MotionSheetConfig> = {
+const characterSprites: Record<CharacterId, IndividualSpriteConfig> = {
   warrior: {
-    image: loadSprite('/assets/characters/warrior_motion_sheet.png'),
-    rows: 12,
-    idleRow: 0,
-    walkRow: 4,
-    attackRow: 8,
+    idle: loadSprite('/assets/characters/warrior/idle.png'),
+    walk: loadSprite('/assets/characters/warrior/walk.png'),
+    attack: loadSprite('/assets/characters/warrior/attack.png'),
+    cols: 4, rows: 4,
   },
   mage: {
-    image: loadSprite('/assets/characters/mage_motion_sheet.png'),
-    rows: 12,
-    idleRow: 0,
-    walkRow: 4,
-    attackRow: 8,
+    idle: loadSprite('/assets/characters/mage/idle.png'),
+    walk: loadSprite('/assets/characters/mage/walk.png'),
+    attack: loadSprite('/assets/characters/mage/attack.png'),
+    cols: 4, rows: 4,
   },
   archer: {
-    image: loadSprite('/assets/characters/archer_motion_sheet.png'),
-    rows: 12,
-    idleRow: 0,
-    walkRow: 4,
-    attackRow: 8,
+    idle: loadSprite('/assets/characters/archer/idle.png'),
+    walk: loadSprite('/assets/characters/archer/walk.png'),
+    attack: loadSprite('/assets/characters/archer/attack.png'),
+    cols: 4, rows: 4,
   },
 };
 
@@ -125,7 +122,124 @@ export interface RenderOptions {
 export class GameRenderer {
   private readonly stagePatternCache = new Map<number, CanvasPattern | null>();
 
-  private readonly spriteTrimCache = new WeakMap<HTMLImageElement, { sx: number; sy: number; sw: number; sh: number }>();
+  private readonly spriteTrimCache = new WeakMap<object, { sx: number; sy: number; sw: number; sh: number }>();
+
+  private readonly sanitizedSpriteCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
+
+  private readonly sanitizedAggressiveSpriteCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
+
+  /**
+   * Strip near-transparent and bright grayish fringe pixels from a sprite
+   * to eliminate checkered-background artifacts from AI-generated PNGs.
+   */
+  private getSanitizedSprite(image: HTMLImageElement, aggressive = false): HTMLImageElement | HTMLCanvasElement {
+    if (!image.complete || image.naturalWidth <= 0) return image;
+    const cache = aggressive ? this.sanitizedAggressiveSpriteCache : this.sanitizedSpriteCache;
+    const cached = cache.get(image);
+    if (cached) return cached;
+    if (typeof document === 'undefined') return image;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const sctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!sctx) return image;
+
+    sctx.drawImage(image, 0, 0);
+    const imgData = sctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3]!;
+      if (a < 25) { d[i + 3] = 0; continue; }
+      if (a < 100) {
+        const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!;
+        const mx = Math.max(r, g, b);
+        const mn = Math.min(r, g, b);
+        // Bright, low-saturation, semi-transparent = fringe / checkerboard
+        if (mx > 160 && mx - mn < 40) { d[i + 3] = 0; }
+      }
+    }
+    if (aggressive) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const idx = (x: number, y: number): number => (y * w + x) * 4;
+      const isBgLike = (x: number, y: number): boolean => {
+        const i = idx(x, y);
+        const a = d[i + 3] ?? 0;
+        if (a <= 28) {
+          return true;
+        }
+        const r = d[i] ?? 0;
+        const g = d[i + 1] ?? 0;
+        const b = d[i + 2] ?? 0;
+        const mx = Math.max(r, g, b);
+        const mn = Math.min(r, g, b);
+        const sat = mx - mn;
+        return sat <= 24 && mx >= 58 && mx <= 218;
+      };
+
+      let borderBg = 0;
+      let borderTotal = 0;
+      for (let x = 0; x < w; x += 1) {
+        borderTotal += 2;
+        if (isBgLike(x, 0)) borderBg += 1;
+        if (isBgLike(x, h - 1)) borderBg += 1;
+      }
+      for (let y = 1; y < h - 1; y += 1) {
+        borderTotal += 2;
+        if (isBgLike(0, y)) borderBg += 1;
+        if (isBgLike(w - 1, y)) borderBg += 1;
+      }
+
+      if (borderTotal > 0 && borderBg / borderTotal > 0.08) {
+        const visited = new Uint8Array(w * h);
+        const queueX: number[] = [];
+        const queueY: number[] = [];
+        const enqueue = (x: number, y: number): void => {
+          if (x < 0 || x >= w || y < 0 || y >= h) {
+            return;
+          }
+          const vi = y * w + x;
+          if (visited[vi]) {
+            return;
+          }
+          visited[vi] = 1;
+          if (!isBgLike(x, y)) {
+            return;
+          }
+          queueX.push(x);
+          queueY.push(y);
+        };
+
+        for (let x = 0; x < w; x += 1) {
+          enqueue(x, 0);
+          enqueue(x, h - 1);
+        }
+        for (let y = 1; y < h - 1; y += 1) {
+          enqueue(0, y);
+          enqueue(w - 1, y);
+        }
+
+        while (queueX.length > 0) {
+          const x = queueX.pop();
+          const y = queueY.pop();
+          if (x === undefined || y === undefined) {
+            continue;
+          }
+          const i = idx(x, y);
+          d[i + 3] = 0;
+          enqueue(x + 1, y);
+          enqueue(x - 1, y);
+          enqueue(x, y + 1);
+          enqueue(x, y - 1);
+        }
+      }
+    }
+
+    sctx.putImageData(imgData, 0, 0);
+    cache.set(image, canvas);
+    return canvas;
+  }
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -324,29 +438,31 @@ export class GameRenderer {
     }
 
     const tint = ctx.createLinearGradient(0, 0, 0, snapshot.worldHeight);
-    tint.addColorStop(0, withAlpha(colorA, 0.28));
-    tint.addColorStop(1, withAlpha(colorB, 0.35));
+    tint.addColorStop(0, withAlpha(colorA, textured ? 0.14 : 0.28));
+    tint.addColorStop(1, withAlpha(colorB, textured ? 0.2 : 0.35));
     ctx.fillStyle = tint;
     ctx.fillRect(0, 0, snapshot.worldWidth, snapshot.worldHeight);
 
     const tile = 128;
-    ctx.globalAlpha = 0.04;
+    ctx.globalAlpha = 0.025;
     for (let y = 0; y < snapshot.worldHeight; y += tile) {
       for (let x = 0; x < snapshot.worldWidth; x += tile) {
         ctx.fillStyle = (x / tile + y / tile) % 2 === 0 ? withAlpha('#ffffff', 0.08) : 'transparent';
-        ctx.fillRect(x, y, tile - 2, tile - 2);
+        ctx.fillRect(x, y, tile, tile);
       }
     }
     ctx.globalAlpha = 1;
 
-    ctx.strokeStyle = withAlpha(accent, 0.08);
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 10; i += 1) {
-      const x = ((i + 0.5) / 10) * snapshot.worldWidth;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x + Math.sin(i * 0.7) * 80, snapshot.worldHeight);
-      ctx.stroke();
+    if (!textured) {
+      ctx.strokeStyle = withAlpha(accent, 0.08);
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 10; i += 1) {
+        const x = ((i + 0.5) / 10) * snapshot.worldWidth;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + Math.sin(i * 0.7) * 80, snapshot.worldHeight);
+        ctx.stroke();
+      }
     }
   }
 
@@ -380,48 +496,41 @@ export class GameRenderer {
     ctx.save();
     ctx.translate(Math.round(p.pos.x), Math.round(p.pos.y + bob));
 
-    const motionSheetMeta = characterMotionSheets[characterId];
-    const motionSheet = motionSheetMeta.image;
+    const spriteCfg = characterSprites[characterId];
     const fallbackSprite = characterFallbackSprites[characterId];
-    if (motionSheet.complete && motionSheet.naturalWidth > 0) {
-      const cols = 8;
-      const rows = motionSheetMeta.rows;
-      const frameW = motionSheet.naturalWidth / cols;
-      const frameH = motionSheet.naturalHeight / rows;
+    const isAttackPose = attackPulse > 0.04;
+
+    // Pick the correct sheet based on state
+    const activeSheet = isAttackPose ? spriteCfg.attack
+      : snapshot.playerMoving ? spriteCfg.walk
+        : spriteCfg.idle;
+
+    if (activeSheet.complete && activeSheet.naturalWidth > 0) {
+      const cols = spriteCfg.cols; // 4
+      const rows = spriteCfg.rows; // 4
+      const frameW = activeSheet.naturalWidth / cols;
+      const frameH = activeSheet.naturalHeight / rows;
       const speedRatio = Math.max(0.08, snapshot.playerSpeedRatio);
-      const isAttackPose = motionSheetMeta.attackRow !== null && attackPulse > 0.04;
 
-      // Determine direction offset: 0=Down, 1=Up, 2=Left, 3=Right
-      // Generated sheets: Row 0=Down, 1=Up, 2=Left, 3=Right
-      let dirOffset = 0;
+      // Direction row: 0=Down, 1=Up, 2=Left, 3=Right
+      let dirRow = 0;
       if (Math.abs(p.lastMoveDir.x) > Math.abs(p.lastMoveDir.y)) {
-        // Horizontal
-        dirOffset = p.lastMoveDir.x > 0 ? 3 : 2; // 3=Right, 2=Left
+        dirRow = p.lastMoveDir.x > 0 ? 3 : 2;
       } else {
-        // Vertical
-        dirOffset = p.lastMoveDir.y < 0 ? 1 : 0; // 1=Up, 0=Down
+        dirRow = p.lastMoveDir.y < 0 ? 1 : 0;
       }
-
-      const baseRow = isAttackPose
-        ? motionSheetMeta.attackRow!
-        : snapshot.playerMoving
-          ? motionSheetMeta.walkRow
-          : motionSheetMeta.idleRow;
-
-      const row = baseRow + dirOffset;
 
       let frameIdx: number;
       if (isAttackPose) {
         const attackProgress = clamp(1 - attackPulse, 0, 0.999);
-        const attackSequence = [0, 1, 2, 3, 4, 5, 6, 7];
-        frameIdx = attackSequence[Math.min(cols - 1, Math.floor(attackProgress * cols))] ?? 0;
+        frameIdx = Math.min(cols - 1, Math.floor(attackProgress * cols));
       } else {
         frameIdx = snapshot.playerMoving
           ? Math.floor(nowMs * (0.003 + speedRatio * 0.008)) % cols
           : Math.floor(nowMs * 0.002) % cols;
       }
       const sx = frameIdx * frameW;
-      const sy = row * frameH; // row 0-11
+      const sy = dirRow * frameH;
 
       const stepPhase = isAttackPose
         ? Math.sin(nowMs * 0.015) * 0.2
@@ -429,37 +538,29 @@ export class GameRenderer {
           ? Math.sin(nowMs * (0.007 + speedRatio * 0.012))
           : Math.sin(nowMs * 0.004) * 0.2;
       const moveBob = snapshot.playerMoving ? Math.abs(stepPhase) * (1.5 + speedRatio * 2.0) : stepPhase * 0.6;
-      // Reduce sway, as we have directional sprites now
-      const moveSway = 0; // snapshot.playerMoving ? Math.sin(nowMs * (0.006 + speedRatio * 0.01)) * (0.5 + speedRatio * 0.8) : 0;
 
       const aspect = frameW / frameH;
-      const drawH = p.radius * (characterId === 'mage' ? 5.9 : 5.68);
+      const drawH = Math.max(p.radius * (characterId === 'mage' ? 6.35 : 6.18), 146);
       const drawW = drawH * aspect;
 
       ctx.fillStyle = 'rgba(0,0,0,0.22)';
       ctx.beginPath();
-      ctx.ellipse(0, 30, Math.max(12, drawW * 0.29), 8.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 6, Math.max(12, drawW * 0.29), 8.5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.save();
-      // No manual flip for facing, as sprites are directional. But facing is still tracked for fallback usage.
-      // But wait: if we use Row 2 (Left) or Row 3 (Right), we don't need scale -1.
-      // Actually, my 4-way sheet HAS explicit Left and Right.
-      // So ctx.scale(p.facing, 1) should be REMOVED or set to 1.
+      const sanitized = this.getSanitizedSprite(activeSheet);
 
-      ctx.translate(moveSway, moveBob - attackLift);
-      // Removed rotation as well for cleaner look with 4-way sprites? Or keep subtle rotation?
-      // Keep subtle rotation for juice.
+      ctx.save();
+      ctx.translate(0, moveBob - attackLift);
       if (snapshot.playerMoving) {
         ctx.rotate(stepPhase * (0.009 + speedRatio * 0.014) * p.facing + attackRotate * p.facing);
       } else {
         ctx.rotate(attackRotate * p.facing);
       }
-      // Always scale 1,1 because direction is handled by row selection
       ctx.scale(1, 1);
 
       ctx.drawImage(
-        motionSheet,
+        sanitized,
         sx,
         sy,
         frameW,
@@ -491,7 +592,7 @@ export class GameRenderer {
 
       ctx.fillStyle = 'rgba(0,0,0,0.22)';
       ctx.beginPath();
-      ctx.ellipse(0, 28, Math.max(12, drawW * 0.32), 9, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 6, Math.max(12, drawW * 0.32), 9, 0, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.save();
@@ -530,7 +631,7 @@ export class GameRenderer {
       const drawW = drawH * aspect;
       ctx.fillStyle = 'rgba(0,0,0,0.2)';
       ctx.beginPath();
-      ctx.ellipse(0, 30, Math.max(12, drawW * 0.3), 9, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 6, Math.max(12, drawW * 0.3), 9, 0, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.save();
@@ -577,27 +678,30 @@ export class GameRenderer {
     ctx.stroke();
   }
 
-  private getTrimmedBounds(image: HTMLImageElement): { sx: number; sy: number; sw: number; sh: number } {
+  private getTrimmedBounds(image: HTMLImageElement | HTMLCanvasElement): { sx: number; sy: number; sw: number; sh: number } {
     const cached = this.spriteTrimCache.get(image);
     if (cached) {
       return cached;
     }
 
+    const width = image instanceof HTMLImageElement ? image.naturalWidth : image.width;
+    const height = image instanceof HTMLImageElement ? image.naturalHeight : image.height;
+
     const fallback = {
       sx: 0,
       sy: 0,
-      sw: image.naturalWidth,
-      sh: image.naturalHeight,
+      sw: width,
+      sh: height,
     };
 
-    if (typeof document === 'undefined' || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+    if (typeof document === 'undefined' || width <= 0 || height <= 0) {
       this.spriteTrimCache.set(image, fallback);
       return fallback;
     }
 
     const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
+    canvas.width = width;
+    canvas.height = height;
     const trimCtx = canvas.getContext('2d');
     if (!trimCtx) {
       this.spriteTrimCache.set(image, fallback);
@@ -782,11 +886,12 @@ export class GameRenderer {
         : monsterSprites[monster.kind];
 
     if (sprite.complete && sprite.naturalWidth > 0) {
-      const trim = this.getTrimmedBounds(sprite);
+      const sanitized = this.getSanitizedSprite(sprite, !monster.isBoss);
+      const trim = this.getTrimmedBounds(sanitized);
       const aspect = trim.sw / trim.sh;
-      const drawH = monster.radius * (monster.isBoss ? 3.5 : 3.05);
+      const drawH = monster.radius * (monster.isBoss ? 3.95 : 3.4);
       const drawW = drawH * aspect;
-      ctx.drawImage(sprite, trim.sx, trim.sy, trim.sw, trim.sh, -drawW / 2, -drawH * 0.66, drawW, drawH);
+      ctx.drawImage(sanitized, trim.sx, trim.sy, trim.sw, trim.sh, -drawW / 2, -drawH * 0.66, drawW, drawH);
       ctx.restore();
       return;
     }
@@ -878,36 +983,46 @@ export class GameRenderer {
   ): void {
     const alpha = clamp(lifeRatio * 1.5, 0, 1);
     const angle = projectile.angle ?? Math.atan2(projectile.vel.y, projectile.vel.x);
-    const length = 14;
+    const length = 20;
+    const tailLength = 10;
 
     ctx.save();
     ctx.translate(projectile.pos.x, projectile.pos.y);
     ctx.rotate(angle);
 
+    // Trail glow
+    ctx.strokeStyle = withAlpha('#d8c39a', alpha * 0.45);
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-length - tailLength, 0);
+    ctx.lineTo(length * 0.5, 0);
+    ctx.stroke();
+
     // Arrow shaft
     ctx.strokeStyle = withAlpha('#8B5E3C', alpha);
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(-length, 0);
-    ctx.lineTo(length * 0.3, 0);
+    ctx.lineTo(length * 0.4, 0);
     ctx.stroke();
 
     // Arrowhead
-    ctx.fillStyle = withAlpha('#C0C0C0', alpha);
+    ctx.fillStyle = withAlpha('#e4e7eb', alpha);
     ctx.beginPath();
     ctx.moveTo(length, 0);
-    ctx.lineTo(length * 0.3, -3.5);
-    ctx.lineTo(length * 0.3, 3.5);
+    ctx.lineTo(length * 0.32, -4.5);
+    ctx.lineTo(length * 0.32, 4.5);
     ctx.closePath();
     ctx.fill();
 
     // Fletching
     ctx.strokeStyle = withAlpha('#f4f1bb', alpha * 0.7);
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(-length, -3);
-    ctx.lineTo(-length + 4, 0);
-    ctx.lineTo(-length, 3);
+    ctx.moveTo(-length, -4);
+    ctx.lineTo(-length + 6, 0);
+    ctx.lineTo(-length, 4);
     ctx.stroke();
 
     ctx.restore();

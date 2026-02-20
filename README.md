@@ -53,6 +53,10 @@ src/
     sfx.json              # SFX 메타
 public/
   assets/                 # 캐릭터/몬스터/배경/보스
+    characters/
+      warrior/            # idle.png, walk.png, attack.png
+      mage/               # idle.png, walk.png, attack.png
+      archer/             # idle.png, walk.png, attack.png
   audio/                  # bgm/sfx wav
 scripts/                  # 에셋/오디오/QA/정리 스크립트
 docs/                     # 회의록/기획/프롬프트 문서
@@ -65,18 +69,26 @@ docs/                     # 회의록/기획/프롬프트 문서
 - `npm run assets:audio` : BGM/SFX 생성
 - `npm run assets:ai` : OpenAI 이미지 API 기반 에셋 생성(별도 API 키 필요)
 
-## 모션 시트 스펙 주의사항
-현재 렌더러(`src/game/renderer.ts`)는 캐릭터 모션 시트에 대해 아래 구조를 기대합니다.
+## 캐릭터 애니메이션 에셋 스펙
+현재 렌더러(`src/game/renderer.ts`)는 직업별로 분리된 4x4 시트를 사용합니다.
 
-- 컬럼: `8`
-- 행: `12`
-- 의미:
-  - `0~3`: Idle 4방향
-  - `4~7`: Move 4방향
-  - `8~11`: Attack 4방향
+- 전사
+  - `/assets/characters/warrior/idle.png`
+  - `/assets/characters/warrior/walk.png`
+  - `/assets/characters/warrior/attack.png`
+- 마법사
+  - `/assets/characters/mage/idle.png`
+  - `/assets/characters/mage/walk.png`
+  - `/assets/characters/mage/attack.png`
+- 궁수
+  - `/assets/characters/archer/idle.png`
+  - `/assets/characters/archer/walk.png`
+  - `/assets/characters/archer/attack.png`
 
-즉, 8x3 시트를 바로 넣으면 런타임에서 행 매핑이 깨질 수 있습니다.  
-에셋 교체 시 반드시 렌더러 기대 스펙과 생성 스펙을 맞추세요.
+공통 규격:
+- `4열 x 4행` (방향: 하/상/좌/우)
+- 상태별 시트 분리(`idle`, `walk`, `attack`)
+- PNG 투명 배경 권장
 
 ## QA / 검증
 - 최소 검증:
@@ -91,6 +103,15 @@ npm run build
 - 코어 게임 루프 및 UX/HUD/설정 시스템은 구현 완료 상태
 - 에셋 파이프라인은 여러 라운드 작업이 누적되어 스펙/스크립트가 혼재
 - 최근 AI 생성 모션 시트는 노이즈/규격 불일치 이슈가 반복됨
+
+## 업데이트 내역 (2026-02-20)
+- 캐릭터 실사용 애니메이션 에셋을 직업별 폴더 구조로 정리
+  - `public/assets/characters/{warrior|mage|archer}/{idle|walk|attack}.png`
+- 렌더러 캐릭터 경로를 새 구조로 변경 (`src/game/renderer.ts`)
+- 배경 렌더를 원본 타일 반복 방식으로 복구하고, 텍스처 배경 시 과한 오버레이/장식선 완화
+- 몬스터 스프라이트 누끼/체커보드 제거 로직 강화(aggressive sanitize + sanitized 기준 trim)
+- 몬스터/화살 투사체 가독성 개선(크기/트레일/두께 보정)
+- 레거시 `refined_*` 루트 파일 및 구 모션시트 참조 정리 방향으로 이관
 
 ## 관련 문서
 - 프로젝트 분석/향후 플랜: `docs/future_plan_2026-02-16.md`
