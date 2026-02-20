@@ -119,6 +119,8 @@ export interface RenderOptions {
   highContrastTelegraphs: boolean;
 }
 
+export const WORLD_RENDER_SCALE = 0.6;
+
 export class GameRenderer {
   private readonly stagePatternCache = new Map<number, CanvasPattern | null>();
 
@@ -127,6 +129,23 @@ export class GameRenderer {
   private readonly sanitizedSpriteCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
 
   private readonly sanitizedAggressiveSpriteCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
+
+  private viewMinX = 0;
+
+  private viewMinY = 0;
+
+  private viewMaxX = 0;
+
+  private viewMaxY = 0;
+
+  private isVisible(x: number, y: number, padding = 0): boolean {
+    return (
+      x + padding >= this.viewMinX &&
+      x - padding <= this.viewMaxX &&
+      y + padding >= this.viewMinY &&
+      y - padding <= this.viewMaxY
+    );
+  }
 
   /**
    * Strip near-transparent and bright grayish fringe pixels from a sprite
@@ -251,13 +270,20 @@ export class GameRenderer {
     options: RenderOptions,
   ): void {
     const stage = STAGES[snapshot.stageIndex] ?? STAGES[STAGES.length - 1]!;
-    const camX = snapshot.camera.x - viewportWidth * 0.5 + snapshot.camera.shakeX;
-    const camY = snapshot.camera.y - viewportHeight * 0.5 + snapshot.camera.shakeY;
+    const worldViewWidth = viewportWidth / WORLD_RENDER_SCALE;
+    const worldViewHeight = viewportHeight / WORLD_RENDER_SCALE;
+    const camX = snapshot.camera.x - worldViewWidth * 0.5 + snapshot.camera.shakeX;
+    const camY = snapshot.camera.y - worldViewHeight * 0.5 + snapshot.camera.shakeY;
+    this.viewMinX = camX;
+    this.viewMinY = camY;
+    this.viewMaxX = camX + worldViewWidth;
+    this.viewMaxY = camY + worldViewHeight;
 
     ctx.clearRect(0, 0, viewportWidth, viewportHeight);
     ctx.imageSmoothingEnabled = false;
 
     ctx.save();
+    ctx.scale(WORLD_RENDER_SCALE, WORLD_RENDER_SCALE);
     ctx.translate(-camX, -camY);
 
     this.drawStageBackground(
@@ -267,6 +293,10 @@ export class GameRenderer {
       stage.accent,
       snapshot,
       snapshot.stageIndex,
+      camX,
+      camY,
+      worldViewWidth,
+      worldViewHeight,
     );
     this.drawBossTelegraphs(ctx, snapshot, nowMs, options.highContrastTelegraphs);
     this.drawGems(ctx, snapshot);
@@ -274,6 +304,9 @@ export class GameRenderer {
     this.drawSlashes(ctx, snapshot);
 
     for (const monster of snapshot.monsters) {
+      if (!this.isVisible(monster.pos.x, monster.pos.y, monster.radius * 2.2)) {
+        continue;
+      }
       this.drawMonster(ctx, monster, nowMs, snapshot.stageIndex);
       this.drawMonsterHp(ctx, monster);
     }
@@ -412,6 +445,10 @@ export class GameRenderer {
     accent: string,
     snapshot: GameSnapshot,
     stageIndex: number,
+    viewX: number,
+    viewY: number,
+    viewWidth: number,
+    viewHeight: number,
   ): void {
     const stageTexture = stageBackgroundSprites[stageIndex];
     let textured = false;
@@ -424,7 +461,7 @@ export class GameRenderer {
       }
       if (pattern) {
         ctx.fillStyle = pattern;
-        ctx.fillRect(0, 0, snapshot.worldWidth, snapshot.worldHeight);
+        ctx.fillRect(viewX, viewY, viewWidth, viewHeight);
         textured = true;
       }
     }
@@ -434,19 +471,23 @@ export class GameRenderer {
       gradient.addColorStop(0, colorA);
       gradient.addColorStop(1, colorB);
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, snapshot.worldWidth, snapshot.worldHeight);
+      ctx.fillRect(viewX, viewY, viewWidth, viewHeight);
     }
 
-    const tint = ctx.createLinearGradient(0, 0, 0, snapshot.worldHeight);
+    const tint = ctx.createLinearGradient(0, viewY, 0, viewY + viewHeight);
     tint.addColorStop(0, withAlpha(colorA, textured ? 0.14 : 0.28));
     tint.addColorStop(1, withAlpha(colorB, textured ? 0.2 : 0.35));
     ctx.fillStyle = tint;
-    ctx.fillRect(0, 0, snapshot.worldWidth, snapshot.worldHeight);
+    ctx.fillRect(viewX, viewY, viewWidth, viewHeight);
 
     const tile = 128;
     ctx.globalAlpha = 0.025;
-    for (let y = 0; y < snapshot.worldHeight; y += tile) {
-      for (let x = 0; x < snapshot.worldWidth; x += tile) {
+    const startY = Math.floor(viewY / tile) * tile;
+    const endY = viewY + viewHeight + tile;
+    const startX = Math.floor(viewX / tile) * tile;
+    const endX = viewX + viewWidth + tile;
+    for (let y = startY; y < endY; y += tile) {
+      for (let x = startX; x < endX; x += tile) {
         ctx.fillStyle = (x / tile + y / tile) % 2 === 0 ? withAlpha('#ffffff', 0.08) : 'transparent';
         ctx.fillRect(x, y, tile, tile);
       }
@@ -796,6 +837,18 @@ export class GameRenderer {
 
   private drawBeams(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot): void {
     for (const beam of snapshot.beams) {
+      const minX = Math.min(beam.from.x, beam.to.x);
+      const maxX = Math.max(beam.from.x, beam.to.x);
+      const minY = Math.min(beam.from.y, beam.to.y);
+      const maxY = Math.max(beam.from.y, beam.to.y);
+      if (
+        maxX < this.viewMinX - 80 ||
+        minX > this.viewMaxX + 80 ||
+        maxY < this.viewMinY - 80 ||
+        minY > this.viewMaxY + 80
+      ) {
+        continue;
+      }
       const alpha = clamp(beam.life / beam.maxLife, 0, 1);
       const beamColor = beam.color || '#f8b4ff';
       ctx.strokeStyle = withAlpha(beamColor, 0.86 * alpha);
@@ -824,6 +877,9 @@ export class GameRenderer {
 
   private drawLightnings(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot, nowMs: number): void {
     for (const strike of snapshot.lightnings) {
+      if (!this.isVisible(strike.pos.x, strike.pos.y, strike.radius * 1.25)) {
+        continue;
+      }
       const alpha = clamp(strike.life / strike.maxLife, 0, 1);
       const segments = 7;
       const startY = strike.pos.y - strike.radius;
@@ -925,6 +981,9 @@ export class GameRenderer {
     accentColor: string,
   ): void {
     for (const projectile of snapshot.projectiles) {
+      if (!this.isVisible(projectile.pos.x, projectile.pos.y, 110)) {
+        continue;
+      }
       const lifeRatio = projectile.life / projectile.maxLife;
 
       if (projectile.kind === 'slash') {
@@ -1099,6 +1158,9 @@ export class GameRenderer {
 
   private drawGems(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot): void {
     for (const gem of snapshot.gems) {
+      if (!this.isVisible(gem.pos.x, gem.pos.y, gem.radius + 6)) {
+        continue;
+      }
       ctx.fillStyle = '#7ef5d6';
       ctx.beginPath();
       ctx.moveTo(gem.pos.x, gem.pos.y - gem.radius);
@@ -1117,6 +1179,9 @@ export class GameRenderer {
 
   private drawParticles(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot): void {
     for (const particle of snapshot.particles) {
+      if (!this.isVisible(particle.pos.x, particle.pos.y, particle.size + 6)) {
+        continue;
+      }
       const alpha = clamp(particle.life / particle.maxLife, 0, 1);
       ctx.fillStyle = withAlpha(particle.color, alpha);
       ctx.beginPath();
@@ -1127,6 +1192,9 @@ export class GameRenderer {
 
   private drawDamageTexts(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot): void {
     for (const text of snapshot.damageTexts) {
+      if (!this.isVisible(text.pos.x, text.pos.y, 36)) {
+        continue;
+      }
       const alpha = clamp(text.life / text.maxLife, 0, 1);
       ctx.globalAlpha = alpha;
       ctx.font = text.crit ? 'bold 22px "Jua", sans-serif' : 'bold 18px "Jua", sans-serif';
@@ -1139,6 +1207,9 @@ export class GameRenderer {
 
   private drawSlashes(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot): void {
     for (const slash of snapshot.slashes) {
+      if (!this.isVisible(slash.pos.x, slash.pos.y, slash.radius + 20)) {
+        continue;
+      }
       const alpha = clamp(slash.life / slash.maxLife, 0, 1);
       ctx.strokeStyle = withAlpha('#fff7d1', alpha * 0.9);
       ctx.lineWidth = 12;

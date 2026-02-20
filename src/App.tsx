@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { AudioManager } from './audio/AudioManager';
 import { GameEngine } from './game/engine';
-import { GameRenderer } from './game/renderer';
+import { GameRenderer, WORLD_RENDER_SCALE } from './game/renderer';
 import {
   CHARACTER_CONFIGS,
   STAGES,
@@ -320,7 +320,8 @@ export default function App(): JSX.Element {
         return;
       }
 
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dprCap = settings.reduceFx ? 1.25 : 1.5;
+      const dpr = Math.min(dprCap, window.devicePixelRatio || 1);
       const targetW = Math.round(width * dpr);
       const targetH = Math.round(height * dpr);
       if (canvas.width !== targetW || canvas.height !== targetH) {
@@ -338,7 +339,7 @@ export default function App(): JSX.Element {
       const dt = lastTsRef.current === 0 ? 0.016 : (ts - lastTsRef.current) / 1000;
       lastTsRef.current = ts;
 
-      engine.update(dt, width, height);
+      engine.update(dt, width / WORLD_RENDER_SCALE, height / WORLD_RENDER_SCALE);
       const next = engine.getSnapshot();
       const audioEvents = engine.consumeAudioEvents();
       const gameplayActive =

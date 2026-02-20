@@ -39,6 +39,11 @@ const DAMAGE_TEXT_LIFE = 0.65;
 const SLASH_LIFE = 0.22;
 const BEAM_LIFE = 0.18;
 const LIGHTNING_LIFE = 0.2;
+const MAX_MONSTERS_BASE = 180;
+const MAX_MONSTERS_PER_STAGE = 24;
+const MAX_GEMS = 520;
+const MAX_PARTICLES = 900;
+const MAX_DAMAGE_TEXTS = 180;
 
 const clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
 
@@ -541,7 +546,10 @@ export class GameEngine {
 
     this.state.spawnTimer -= dt;
     if (this.state.spawnTimer <= 0 && !this.state.bossSpawned) {
-      this.spawnMonster(stage);
+      const monsterCap = MAX_MONSTERS_BASE + this.state.stageIndex * MAX_MONSTERS_PER_STAGE;
+      if (this.state.monsters.length < monsterCap) {
+        this.spawnMonster(stage);
+      }
       const elapsed = 1 - this.state.stageTimeLeft / stage.duration;
       const minInterval = stage.spawnMinInterval;
       const interval = stage.spawnBaseInterval - elapsed * (stage.spawnBaseInterval - minInterval);
@@ -847,6 +855,42 @@ export class GameEngine {
     }
   }
 
+  private collectNearestLivingMonsters(origin: Vec2, maxDistanceSq: number, maxCount: number): Monster[] {
+    if (maxCount <= 0) {
+      return [];
+    }
+
+    const nearest: Monster[] = [];
+    const nearestDist: number[] = [];
+
+    for (const monster of this.state.monsters) {
+      if (monster.hp <= 0) {
+        continue;
+      }
+      const d2 = distanceSq(monster.pos, origin);
+      if (d2 > maxDistanceSq) {
+        continue;
+      }
+
+      let insertAt = nearest.length;
+      while (insertAt > 0 && d2 < nearestDist[insertAt - 1]!) {
+        insertAt -= 1;
+      }
+      if (insertAt >= maxCount) {
+        continue;
+      }
+
+      nearest.splice(insertAt, 0, monster);
+      nearestDist.splice(insertAt, 0, d2);
+      if (nearest.length > maxCount) {
+        nearest.pop();
+        nearestDist.pop();
+      }
+    }
+
+    return nearest;
+  }
+
   private updateAttacks(dt: number): void {
     const p = this.state.player;
     p.attackCooldown -= dt;
@@ -883,9 +927,7 @@ export class GameEngine {
 
   private performSlashProjectile(): boolean {
     const p = this.state.player;
-    const targets = this.state.monsters
-      .filter((monster) => monster.hp > 0)
-      .sort((a, b) => distanceSq(a.pos, p.pos) - distanceSq(b.pos, p.pos));
+    const targets = this.collectNearestLivingMonsters(p.pos, Number.POSITIVE_INFINITY, 1);
 
     if (targets.length === 0) {
       return false;
@@ -936,23 +978,18 @@ export class GameEngine {
 
   private performArrowAttack(): boolean {
     const p = this.state.player;
-    const sorted = [...this.state.monsters]
-      .filter((m) => m.hp > 0)
-      .sort((a, b) => distanceSq(a.pos, p.pos) - distanceSq(b.pos, p.pos));
-
-    if (sorted.length === 0) {
+    const maxShots = Math.max(1, p.projectiles);
+    const targets = this.collectNearestLivingMonsters(
+      p.pos,
+      sqr(p.range * 1.4),
+      Math.min(Math.max(1, maxShots), 12),
+    );
+    if (targets.length === 0) {
       return false;
     }
 
-    const maxShots = Math.max(1, p.projectiles);
-    let fired = 0;
     for (let i = 0; i < maxShots; i += 1) {
-      const target = sorted[i % sorted.length]!;
-      const d2 = distanceSq(target.pos, p.pos);
-      if (d2 > sqr(p.range * 1.4)) {
-        continue;
-      }
-
+      const target = targets[i % targets.length]!;
       const dir = normalize({
         x: target.pos.x - p.pos.x + randomRange(-8, 8),
         y: target.pos.y - p.pos.y + randomRange(-8, 8),
@@ -979,94 +1016,30 @@ export class GameEngine {
         kind: 'arrow',
         angle,
       });
-      fired += 1;
-    }
-
-    if (fired === 0) {
-      const fallback = sorted[0]!;
-      const dir = normalize({
-        x: fallback.pos.x - p.pos.x,
-        y: fallback.pos.y - p.pos.y,
-      });
-      p.lastMoveDir = dir;
-      const angle = Math.atan2(dir.y, dir.x);
-      this.state.projectiles.push({
-        id: this.nextId(),
-        pos: {
-          x: p.pos.x + dir.x * (p.radius + 8),
-          y: p.pos.y + dir.y * (p.radius + 8),
-        },
-        vel: {
-          x: dir.x * 680,
-          y: dir.y * 680,
-        },
-        radius: 5,
-        damage: p.damage,
-        life: 1.0,
-        maxLife: 1.0,
-        pierceLeft: p.pierce,
-        critChance: p.critChance,
-        kind: 'arrow',
-        angle,
-      });
     }
     return true;
   }
 
   private performMagicAoeAttack(): boolean {
     const p = this.state.player;
-    const sorted = [...this.state.monsters]
-      .filter((m) => m.hp > 0)
-      .sort((a, b) => distanceSq(a.pos, p.pos) - distanceSq(b.pos, p.pos));
-
-    if (sorted.length === 0) {
+    const maxShots = Math.max(1, p.projectiles);
+    const targets = this.collectNearestLivingMonsters(
+      p.pos,
+      sqr(p.range * 1.4),
+      Math.min(Math.max(1, maxShots), 12),
+    );
+    if (targets.length === 0) {
       return false;
     }
 
-    const maxShots = Math.max(1, p.projectiles);
-    let fired = 0;
     for (let i = 0; i < maxShots; i += 1) {
-      const target = sorted[i % sorted.length]!;
-      const d2 = distanceSq(target.pos, p.pos);
-      if (d2 > sqr(p.range * 1.4)) {
-        continue;
-      }
-
+      const target = targets[i % targets.length]!;
       const dir = normalize({
         x: target.pos.x - p.pos.x + randomRange(-16, 16),
         y: target.pos.y - p.pos.y + randomRange(-16, 16),
       });
       if (i === 0) p.lastMoveDir = dir; // Face first target
 
-      this.state.projectiles.push({
-        id: this.nextId(),
-        pos: {
-          x: p.pos.x + dir.x * (p.radius + 8),
-          y: p.pos.y + dir.y * (p.radius + 8),
-        },
-        vel: {
-          x: dir.x * PROJECTILE_SPEED,
-          y: dir.y * PROJECTILE_SPEED,
-        },
-        radius: 9,
-        damage: p.damage,
-        life: PROJECTILE_LIFE,
-        maxLife: PROJECTILE_LIFE,
-        pierceLeft: 0,
-        critChance: p.critChance,
-        kind: 'magic',
-        aoeRadius: 65,
-      });
-      fired += 1;
-    }
-
-    if (fired === 0) {
-      const fallback = sorted[0]!;
-      const dir = normalize({
-        x: fallback.pos.x - p.pos.x,
-        y: fallback.pos.y - p.pos.y,
-      });
-      p.lastMoveDir = dir;
       this.state.projectiles.push({
         id: this.nextId(),
         pos: {
@@ -1168,15 +1141,16 @@ export class GameEngine {
 
     const level = this.state.skills.lightning;
     const p = this.state.player;
-    const living = this.state.monsters.filter((monster) => monster.hp > 0);
-    if (living.length === 0) {
+    const targetCount = 1 + Math.floor((level + 1) / 2);
+    const nearestPool = this.collectNearestLivingMonsters(
+      p.pos,
+      Number.POSITIVE_INFINITY,
+      Math.max(3, targetCount * 2),
+    );
+    if (nearestPool.length === 0) {
       return;
     }
-
-    const targetCount = Math.min(living.length, 1 + Math.floor((level + 1) / 2));
-    const sorted = [...living].sort((a, b) => distanceSq(a.pos, p.pos) - distanceSq(b.pos, p.pos));
-    const pool = sorted.slice(0, Math.min(sorted.length, Math.max(3, targetCount * 2)));
-    const targets = pickRandomUnique(pool, targetCount);
+    const targets = pickRandomUnique(nearestPool, Math.min(targetCount, nearestPool.length));
 
     for (const target of targets) {
       const crit = Math.random() < this.state.player.critChance * 0.6;
@@ -1207,12 +1181,10 @@ export class GameEngine {
     }
 
     const p = this.state.player;
-    const living = this.state.monsters.filter((monster) => monster.hp > 0);
-    if (living.length === 0) {
+    const target = this.collectNearestLivingMonsters(p.pos, Number.POSITIVE_INFINITY, 1)[0];
+    if (!target) {
       return;
     }
-
-    const target = [...living].sort((a, b) => distanceSq(a.pos, p.pos) - distanceSq(b.pos, p.pos))[0]!;
     const dir = normalize({
       x: target.pos.x - p.pos.x,
       y: target.pos.y - p.pos.y,
@@ -1226,7 +1198,10 @@ export class GameEngine {
     };
 
     const baseDamage = p.damage * (2.9 + level * 1.15);
-    for (const monster of living) {
+    for (const monster of this.state.monsters) {
+      if (monster.hp <= 0) {
+        continue;
+      }
       const d = distanceToSegment(monster.pos, beamStart, beamEnd);
       if (d > monster.radius + 12) {
         continue;
@@ -1254,6 +1229,7 @@ export class GameEngine {
 
   private updateProjectiles(dt: number): void {
     const remaining: Projectile[] = [];
+    const livingMonsters = this.state.monsters.filter((monster) => monster.hp > 0);
 
     for (const projectile of this.state.projectiles) {
       projectile.pos.x += projectile.vel.x * dt;
@@ -1271,10 +1247,7 @@ export class GameEngine {
       }
 
       let destroyed = false;
-      for (const monster of this.state.monsters) {
-        if (monster.hp <= 0) {
-          continue;
-        }
+      for (const monster of livingMonsters) {
         const rr = projectile.radius + monster.radius;
         if (distanceSq(projectile.pos, monster.pos) > rr * rr) {
           continue;
@@ -1287,8 +1260,8 @@ export class GameEngine {
         // Mage AOE explosion on hit
         if (projectile.kind === 'magic' && projectile.aoeRadius) {
           const aoeR = projectile.aoeRadius;
-          for (const otherMonster of this.state.monsters) {
-            if (otherMonster.id === monster.id || otherMonster.hp <= 0) {
+          for (const otherMonster of livingMonsters) {
+            if (otherMonster.id === monster.id) {
               continue;
             }
             const aoeDistSq = distanceSq(projectile.pos, otherMonster.pos);
@@ -1603,15 +1576,25 @@ export class GameEngine {
         this.emitAudio('boss_die', 1);
       } else {
         regularKilled += 1;
-        this.state.gems.push({
-          id: this.nextId(),
-          pos: {
-            x: monster.pos.x + randomRange(-8, 8),
-            y: monster.pos.y + randomRange(-8, 8),
-          },
-          value: monster.expValue,
-          radius: 6,
-        });
+        if (this.state.gems.length >= MAX_GEMS) {
+          const idx = Math.floor(Math.random() * this.state.gems.length);
+          const merged = this.state.gems[idx];
+          if (merged) {
+            merged.value += monster.expValue;
+            merged.pos.x = (merged.pos.x + monster.pos.x) * 0.5;
+            merged.pos.y = (merged.pos.y + monster.pos.y) * 0.5;
+          }
+        } else {
+          this.state.gems.push({
+            id: this.nextId(),
+            pos: {
+              x: monster.pos.x + randomRange(-8, 8),
+              y: monster.pos.y + randomRange(-8, 8),
+            },
+            value: monster.expValue,
+            radius: 6,
+          });
+        }
       }
     }
 
@@ -1711,6 +1694,9 @@ export class GameEngine {
   }
 
   private spawnDamageText(pos: Vec2, value: number, crit: boolean): void {
+    if (this.state.damageTexts.length >= MAX_DAMAGE_TEXTS) {
+      this.state.damageTexts.shift();
+    }
     this.state.damageTexts.push({
       id: this.nextId(),
       pos,
@@ -1722,7 +1708,14 @@ export class GameEngine {
   }
 
   private emitBurst(center: Vec2, count: number, color: string, speed: number): void {
-    for (let i = 0; i < count; i += 1) {
+    if (this.state.particles.length >= MAX_PARTICLES) {
+      return;
+    }
+    const allowance = Math.min(count, MAX_PARTICLES - this.state.particles.length);
+    if (allowance <= 0) {
+      return;
+    }
+    for (let i = 0; i < allowance; i += 1) {
       const angle = Math.random() * Math.PI * 2;
       const magnitude = randomRange(speed * 0.35, speed);
       this.state.particles.push({
