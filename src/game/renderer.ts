@@ -191,7 +191,7 @@ export class GameRenderer {
         if (isBgLike(w - 1, y)) borderBg += 1;
       }
 
-      if (borderTotal > 0 && borderBg / borderTotal > 0.08) {
+      if (borderTotal > 0 && borderBg / borderTotal > 0.05) {
         const visited = new Uint8Array(w * h);
         const queueX: number[] = [];
         const queueY: number[] = [];
